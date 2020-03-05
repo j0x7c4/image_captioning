@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import cPickle as pickle
 import copy
 import json
 from tqdm import tqdm
@@ -12,6 +11,7 @@ from utils.nn import NN
 from utils.coco.coco import COCO
 from utils.coco.pycocoevalcap.eval import COCOEvalCap
 from utils.misc import ImageLoader, CaptionData, TopN
+
 
 class BaseModel(object):
     def __init__(self, config):
@@ -231,17 +231,17 @@ class BaseModel(object):
 
     def save(self):
         """ Save the model. """
-        config = self.config
-        data = {v.name: v.eval() for v in tf.global_variables()}
-        save_path = os.path.join(config.save_dir, str(self.global_step.eval()))
-
-        print((" Saving the model to %s..." % (save_path+".npy")))
-        np.save(save_path, data)
-        info_file = open(os.path.join(config.save_dir, "config.pickle"), "wb")
-        config_ = copy.copy(config)
-        config_.global_step = self.global_step.eval()
-        pickle.dump(config_, info_file)
-        info_file.close()
+        # config = self.config
+        # data = {v.name: v.eval() for v in tf.global_variables()}
+        # save_path = os.path.join(config.save_dir, str(self.global_step.eval()))
+        #
+        # print((" Saving the model to %s..." % (save_path+".npy")))
+        # np.save(save_path, data)
+        # info_file = open(os.path.join(config.save_dir, "config.pickle"), "wb")
+        # config_ = copy.copy(config)
+        # config_.global_step = self.global_step.eval()
+        # pickle.dump(config_, info_file)
+        # info_file.close()
         print("Model saved.")
 
     def load(self, sess, model_file=None):

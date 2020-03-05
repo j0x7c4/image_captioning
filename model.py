@@ -3,6 +3,7 @@ import numpy as np
 
 from base_model import BaseModel
 
+
 class CaptionGenerator(BaseModel):
     def build(self):
         """ Build the model. """

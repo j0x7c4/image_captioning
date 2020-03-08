@@ -21,9 +21,7 @@ class BaseModel(object):
         self.image_loader = ImageLoader('./utils/ilsvrc_2012_mean.npy')
         self.image_shape = [224, 224, 3]
         self.nn = NN(config)
-        self.global_step = tf.Variable(0,
-                                       name = 'global_step',
-                                       trainable = False)
+        self.global_step = tf.train.get_or_create_global_step()
         self.build()
 
     def build(self):

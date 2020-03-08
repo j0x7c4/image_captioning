@@ -42,6 +42,8 @@ def main(argv):
 
     global_step = tf.train.get_or_create_global_step()
     checkpoint_step = tf.assign_add(global_step, 1)
+    
+    model = CaptionGenerator(config)
 
     # with tf.Session() as sess:
     with tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
@@ -49,19 +51,17 @@ def main(argv):
         if FLAGS.phase == 'train':
             # training phase
             data = prepare_train_data(config)
-            model = CaptionGenerator(config)
             # sess.run(tf.global_variables_initializer())
             if FLAGS.load:
                 model.load(sess, FLAGS.model_file)
             if FLAGS.load_cnn:
                 model.load_cnn(sess, FLAGS.cnn_model_file)
-            tf.get_default_graph().finalize()
+            # tf.get_default_graph().finalize()
             model.train(sess, data)
 
         elif FLAGS.phase == 'eval':
             # evaluation phase
             coco, data, vocabulary = prepare_eval_data(config)
-            model = CaptionGenerator(config)
             model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
             model.eval(sess, coco, data, vocabulary)
@@ -69,7 +69,6 @@ def main(argv):
         else:
             # testing phase
             data, vocabulary = prepare_test_data(config)
-            model = CaptionGenerator(config)
             model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
             model.test(sess, data, vocabulary)

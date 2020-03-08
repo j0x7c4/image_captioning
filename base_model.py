@@ -231,6 +231,13 @@ class BaseModel(object):
 
     def save(self):
         """ Save the model. """
+        config = self.config
+        save_dir = config.save_dir
+        if tf.gfile.Exists(save_dir):
+            tf.gfile.DeleteRecursively(save_dir)
+        print('target exporting save_dir: %s', save_dir)
+        saved_model = tf.saved_model.builder.SavedModelBuilder(save_dir)
+        saved_model.save()
         # config = self.config
         # data = {v.name: v.eval() for v in tf.global_variables()}
         # save_path = os.path.join(config.save_dir, str(self.global_step.eval()))
@@ -250,6 +257,7 @@ class BaseModel(object):
         if model_file is not None:
             save_path = model_file
         else:
+            info_path = os.path.join(config.save_dir, "config.pickle")
             info_path = os.path.join(config.save_dir, "config.pickle")
             info_file = open(info_path, "rb")
             config = pickle.load(info_file)

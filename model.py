@@ -515,11 +515,12 @@ class CaptionGenerator(BaseModel):
 
     def build_summary(self):
         """ Build the summary (for TensorBoard visualization). """
+        '''
         with tf.name_scope("variables"):
             for var in tf.trainable_variables():
                 with tf.name_scope(var.name[:var.name.find(":")]):
                     self.variable_summary(var)
-
+        '''
         with tf.name_scope("metrics"):
             tf.summary.scalar("cross_entropy_loss", self.cross_entropy_loss)
             tf.summary.scalar("attention_loss", self.attention_loss)

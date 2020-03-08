@@ -36,13 +36,21 @@ def main(argv):
     config.phase = FLAGS.phase
     config.train_cnn = FLAGS.train_cnn
     config.beam_size = FLAGS.beam_size
+    checkpoint_dir = config.checkpoint_dir
+    save_checkpoint_secs = config.save_checkpoint_secs
+    save_checkpoint_steps = config.save_checkpoint_steps
 
-    with tf.Session() as sess:
+    global_step = tf.train.get_or_create_global_step()
+    checkpoint_step = tf.assign_add(global_step, 1)
+
+    # with tf.Session() as sess:
+    with tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
+            save_checkpoint_steps=save_checkpoint_steps) as sess:
         if FLAGS.phase == 'train':
             # training phase
             data = prepare_train_data(config)
             model = CaptionGenerator(config)
-            sess.run(tf.global_variables_initializer())
+            # sess.run(tf.global_variables_initializer())
             if FLAGS.load:
                 model.load(sess, FLAGS.model_file)
             if FLAGS.load_cnn:

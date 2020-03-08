@@ -1,8 +1,6 @@
-docker --gpus all run -it --rm tensorflow/tensorflow:1.14.0-gpu-py3 \
- -v `pwd`:/workspace \
- cd /workspace && \
- export PYTHONPATH="./utils/coco/pycocoevalcap:./utils/coco/pycocoevalcap/bleu:$PYTHONPATH:./utils/coco/pycocoevalcap/cider" && \
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple
+apt update && apt install -y libsm6 libxext6 
+apt-get install libxrender1
+export PYTHONPATH="./utils/coco/pycocoevalcap:./utils/coco/pycocoevalcap/bleu:$PYTHONPATH:./utils/coco/pycocoevalcap/cider" && \
 	python main.py --phase=train \
-    	--load_cnn \
-    	--cnn_model_file='./vgg16_no_fc.npy'\
     	--train_cnn

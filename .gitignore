@@ -3,3 +3,8 @@ train
 test
 val
 __pycache__
+models/saved_model
+models/checkpoint
+summary
+vocabulary.csv
+

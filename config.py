@@ -25,7 +25,7 @@ class Config(object):
         self.attention_loss_factor = 0.01
 
         # about the optimization
-        self.num_epochs = 100
+        self.num_epochs = 1
         self.batch_size = 16
         self.optimizer = 'Adam'    # 'Adam', 'RMSProp', 'Momentum' or 'SGD'
         self.initial_learning_rate = 0.0001
@@ -43,12 +43,13 @@ class Config(object):
         # about checkpoint
         self.checkpoint_dir = './models/checkpoint'
         self.save_checkpoint_secs = 10
-        self.save_checkpoint_steps = 10
+        self.save_checkpoint_steps = 100
 
         # about the saver
-        self.save_period = 1000
+        self.save_period = 100
         self.save_dir = './models/saved_model'
         self.summary_dir = './summary/'
+        self.save_timeline = False
 
         # about the vocabulary
         self.vocabulary_file = './vocabulary.csv'

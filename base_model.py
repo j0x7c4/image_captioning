@@ -11,6 +11,8 @@ from utils.nn import NN
 from utils.coco.coco import COCO
 from utils.coco.pycocoevalcap.eval import COCOEvalCap
 from utils.misc import ImageLoader, CaptionData, TopN
+from tensorflow.python.client import timeline
+
 
 
 class BaseModel(object):
@@ -37,6 +39,11 @@ class BaseModel(object):
         train_writer = tf.summary.FileWriter(config.summary_dir,
                                              sess.graph)
 
+        run_metadata = None
+        run_options = None
+        if config.save_timeline:
+            run_metadata = tf.RunMetadata()
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
             for _ in tqdm(list(range(train_data.num_batches)), desc='batch'):
                 batch = train_data.next_batch()
@@ -48,13 +55,19 @@ class BaseModel(object):
                 _, summary, global_step = sess.run([self.opt_op,
                                                     self.summary,
                                                     self.global_step],
-                                                    feed_dict=feed_dict)
+                                                    feed_dict=feed_dict, options=run_options,run_metadata=run_metadata)
                 if (global_step + 1) % config.save_period == 0:
-                    self.save()
+                    if config.save_timeline:
+                        tl = timeline.Timeline(run_metadata.step_stats)
+                        ctf = tl.generate_chrome_trace_format()
+                        with open(os.path.join(config.summary_dir,
+                            'timeline-%d.json' % global_step),'w') as wd:
+                            wd.write(ctf)
+                    self.save(sess)
                 train_writer.add_summary(summary, global_step)
             train_data.reset()
 
-        self.save()
+        self.save(sess)
         train_writer.close()
         print("Training complete.")
 
@@ -227,7 +240,7 @@ class BaseModel(object):
 
         return results
 
-    def save(self):
+    def save(self, sess):
         """ Save the model. """
         config = self.config
         save_dir = config.save_dir
@@ -235,6 +248,7 @@ class BaseModel(object):
             tf.gfile.DeleteRecursively(save_dir)
         print('target exporting save_dir: %s', save_dir)
         saved_model = tf.saved_model.builder.SavedModelBuilder(save_dir)
+        # saved_model.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
         saved_model.save()
         # config = self.config
         # data = {v.name: v.eval() for v in tf.global_variables()}

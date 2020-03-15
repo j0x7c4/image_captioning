@@ -14,7 +14,6 @@ from utils.misc import ImageLoader, CaptionData, TopN
 from tensorflow.python.client import timeline
 
 
-
 class BaseModel(object):
     def __init__(self, config):
         self.config = config
@@ -33,17 +32,12 @@ class BaseModel(object):
         """ Train the model using the COCO train2014 data. """
         print("Training the model...")
         config = self.config
-
-        if not os.path.exists(config.summary_dir):
-            os.mkdir(config.summary_dir)
-        train_writer = tf.summary.FileWriter(config.summary_dir,
-                                             sess.graph)
-
         run_metadata = None
         run_options = None
         if config.save_timeline:
             run_metadata = tf.RunMetadata()
             run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+
         for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
             for _ in tqdm(list(range(train_data.num_batches)), desc='batch'):
                 batch = train_data.next_batch()
@@ -55,20 +49,18 @@ class BaseModel(object):
                 _, summary, global_step = sess.run([self.opt_op,
                                                     self.summary,
                                                     self.global_step],
-                                                    feed_dict=feed_dict, options=run_options,run_metadata=run_metadata)
+                                                   feed_dict=feed_dict, options=run_options, run_metadata=run_metadata)
                 if (global_step + 1) % config.save_period == 0:
+                    self.save(sess._tf_sess())
+
                     if config.save_timeline:
                         tl = timeline.Timeline(run_metadata.step_stats)
                         ctf = tl.generate_chrome_trace_format()
                         with open(os.path.join(config.summary_dir,
-                            'timeline-%d.json' % global_step),'w') as wd:
+                            'timeline-%d.json' % global_step), 'w') as wd:
                             wd.write(ctf)
-                    self.save(sess)
-                train_writer.add_summary(summary, global_step)
             train_data.reset()
-
-        self.save(sess)
-        train_writer.close()
+        self.save(sess._tf_sess())
         print("Training complete.")
 
     def eval(self, sess, eval_gt_coco, eval_data, vocabulary):
@@ -247,20 +239,11 @@ class BaseModel(object):
         if tf.gfile.Exists(save_dir):
             tf.gfile.DeleteRecursively(save_dir)
         print('target exporting save_dir: %s', save_dir)
+
         saved_model = tf.saved_model.builder.SavedModelBuilder(save_dir)
-        # saved_model.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
+        sess.graph._unsafe_unfinalize()
+        saved_model.add_meta_graph_and_variables(sess, [tf.saved_model.SERVING], clear_devices=True)
         saved_model.save()
-        # config = self.config
-        # data = {v.name: v.eval() for v in tf.global_variables()}
-        # save_path = os.path.join(config.save_dir, str(self.global_step.eval()))
-        #
-        # print((" Saving the model to %s..." % (save_path+".npy")))
-        # np.save(save_path, data)
-        # info_file = open(os.path.join(config.save_dir, "config.pickle"), "wb")
-        # config_ = copy.copy(config)
-        # config_.global_step = self.global_step.eval()
-        # pickle.dump(config_, info_file)
-        # info_file.close()
         print("Model saved.")
 
     def load(self, sess, model_file=None):
@@ -274,23 +257,8 @@ class BaseModel(object):
 
         ckpt = tf.train.latest_checkpoint(save_path)
         saver.restore(sess, ckpt)
-            # info_path = os.path.join(config.save_dir, "config.pickle")
-            # info_path = os.path.join(config.save_dir, "config.pickle")
-            # info_file = open(info_path, "rb")
-            # config = pickle.load(info_file)
-            # global_step = config.global_step
-            # info_file.close()
-            # save_path = os.path.join(config.save_dir,
-            #                          str(global_step)+".npy")
 
         print("The model from %s loaded" % save_path)
-        # data_dict = np.load(save_path).item()
-        # count = 0
-        # for v in tqdm(tf.global_variables()):
-        #     if v.name in data_dict.keys():
-        #         sess.run(v.assign(data_dict[v.name]))
-        #         count += 1
-        # print("%d tensors loaded." %count)
 
     def load_cnn(self, session, data_path, ignore_missing=True):
         """ Load a pretrained CNN model. """
@@ -298,7 +266,7 @@ class BaseModel(object):
         data_dict = np.load(data_path).item()
         count = 0
         for op_name in tqdm(data_dict):
-            with tf.variable_scope(op_name, reuse = True):
+            with tf.variable_scope(op_name, reuse=True):
                 for param_name, data in data_dict[op_name].iteritems():
                     try:
                         var = tf.get_variable(param_name)

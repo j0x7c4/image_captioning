@@ -35,6 +35,7 @@ class ImageLoader(object):
         images = np.array(images, np.float32)
         return images
 
+
 class CaptionData(object):
     def __init__(self, sentence, memory, output, score):
        self.sentence = sentence

@@ -47,32 +47,30 @@ def main(argv):
 
     # with tf.Session() as sess:
     with tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
-            save_checkpoint_steps=save_checkpoint_steps) as sess:
+                                           save_checkpoint_steps=save_checkpoint_steps,
+                                           ) as sess:
         if FLAGS.phase == 'train':
             # training phase
             data = prepare_train_data(config)
-            # sess.run(tf.global_variables_initializer())
-            if FLAGS.load:
-                model.load(sess, FLAGS.model_file)
-            if FLAGS.load_cnn:
-                model.load_cnn(sess, FLAGS.cnn_model_file)
-            # tf.get_default_graph().finalize()
+            # WIP modify load part
+            # if FLAGS.load:
+            #     model.load(sess, FLAGS.model_file)
+            # if FLAGS.load_cnn:
+            #     model.load_cnn(sess, FLAGS.cnn_model_file)
             model.train(sess, data)
 
         elif FLAGS.phase == 'eval':
             # evaluation phase
             coco, data, vocabulary = prepare_eval_data(config)
-            # model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
             model.eval(sess, coco, data, vocabulary)
 
         else:
             # testing phase
             data, vocabulary = prepare_test_data(config)
-            # load model by session
-            # model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
             model.test(sess, data, vocabulary)
+
 
 if __name__ == '__main__':
     tf.app.run()

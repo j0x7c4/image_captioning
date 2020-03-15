@@ -18,9 +18,11 @@ class CaptionGenerator(BaseModel):
         print("Building the CNN...")
         if self.config.cnn == 'vgg16':
             self.build_vgg16()
-        else:
+        elif self.config.cnn == 'resnet50':
             self.build_resnet50()
-        print("CNN built.")
+        else:
+            self.build_resnet18()
+        print("CNN %s built." % self.config.cnn)
 
     def build_vgg16(self):
         """ Build the VGG16 net. """
@@ -58,6 +60,47 @@ class CaptionGenerator(BaseModel):
         self.conv_feats = reshaped_conv5_3_feats
         self.num_ctx = 196
         self.dim_ctx = 512
+        self.images = images
+
+    def build_resnet18(self):
+        """ Build the ResNet18. """
+        config = self.config
+
+        images = tf.placeholder(
+            dtype=tf.float32,
+            shape=[config.batch_size] + self.image_shape)
+
+        conv1_feats = self.nn.conv2d(images,
+                                     filters=64,
+                                     kernel_size=(7, 7),
+                                     strides=(2, 2),
+                                     activation=None,
+                                     name='conv1')
+        conv1_feats = self.nn.batch_norm(conv1_feats, 'bn_conv1')
+        conv1_feats = tf.nn.relu(conv1_feats)
+        pool1_feats = self.nn.max_pool2d(conv1_feats,
+                                         pool_size=(3, 3),
+                                         strides=(2, 2),
+                                         name='pool1')
+
+        res2a_feats = self.resnet_block_3_3(pool1_feats, 'res2a', 'bn2a', 64)
+        res2b_feats = self.resnet_block_3_3(res2a_feats, 'res2b', 'bn2b', 64)
+
+        res3a_feats = self.resnet_block(res2b_feats, 'res3a', 'bn3a', 128)
+        res3b_feats = self.resnet_block2(res3a_feats, 'res3b', 'bn3b', 128)
+
+        res4a_feats = self.resnet_block(res3b_feats, 'res4a', 'bn4a', 256)
+        res4b_feats = self.resnet_block2(res4a_feats, 'res4b', 'bn4b', 256)
+
+        res5a_feats = self.resnet_block(res4b_feats, 'res5a', 'bn5a', 512)
+        res5b_feats = self.resnet_block2(res5a_feats, 'res5b', 'bn5b', 512)
+
+        reshaped_res5b_feats = tf.reshape(res5b_feats,
+                                          [config.batch_size, 49, 2048])
+
+        self.conv_feats = reshaped_res5b_feats
+        self.num_ctx = 49
+        self.dim_ctx = 2048
         self.images = images
 
     def build_resnet50(self):
@@ -150,6 +193,32 @@ class CaptionGenerator(BaseModel):
         branch2c_feats = self.nn.batch_norm(branch2c_feats, name2+'_branch2c')
 
         outputs = branch1_feats + branch2c_feats
+        outputs = tf.nn.relu(outputs)
+        return outputs
+
+    def resnet_block_3_3(self, inputs, name1, name2, c):
+        """ 3x3 conv size block of ResNet. """
+        branch2a_feats = self.nn.conv2d(inputs,
+                                        filters=c,
+                                        kernel_size=(3, 3),
+                                        strides=(1, 1),
+                                        activation=None,
+                                        use_bias=False,
+                                        name=name1 + '_branch2a')
+        branch2a_feats = self.nn.batch_norm(branch2a_feats, name2 + '_branch2a')
+        branch2a_feats = tf.nn.relu(branch2a_feats)
+
+        branch2b_feats = self.nn.conv2d(branch2a_feats,
+                                        filters=c,
+                                        kernel_size=(3, 3),
+                                        strides=(1, 1),
+                                        activation=None,
+                                        use_bias=False,
+                                        name=name1 + '_branch2b')
+        branch2b_feats = self.nn.batch_norm(branch2b_feats, name2 + '_branch2b')
+        branch2b_feats = tf.nn.relu(branch2b_feats)
+
+        outputs = inputs + branch2b_feats
         outputs = tf.nn.relu(outputs)
         return outputs
 

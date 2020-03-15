@@ -62,14 +62,15 @@ def main(argv):
         elif FLAGS.phase == 'eval':
             # evaluation phase
             coco, data, vocabulary = prepare_eval_data(config)
-            model.load(sess, FLAGS.model_file)
+            # model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
             model.eval(sess, coco, data, vocabulary)
 
         else:
             # testing phase
             data, vocabulary = prepare_test_data(config)
-            model.load(sess, FLAGS.model_file)
+            # load model by session
+            # model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
             model.test(sess, data, vocabulary)
 

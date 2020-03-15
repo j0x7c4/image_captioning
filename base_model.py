@@ -266,26 +266,31 @@ class BaseModel(object):
     def load(self, sess, model_file=None):
         """ Load the model. """
         config = self.config
+        saver = tf.train.Saver()
         if model_file is not None:
             save_path = model_file
         else:
-            info_path = os.path.join(config.save_dir, "config.pickle")
-            info_path = os.path.join(config.save_dir, "config.pickle")
-            info_file = open(info_path, "rb")
-            config = pickle.load(info_file)
-            global_step = config.global_step
-            info_file.close()
-            save_path = os.path.join(config.save_dir,
-                                     str(global_step)+".npy")
+            save_path = config.checkpoint_dir
 
-        print("Loading the model from %s..." %save_path)
-        data_dict = np.load(save_path).item()
-        count = 0
-        for v in tqdm(tf.global_variables()):
-            if v.name in data_dict.keys():
-                sess.run(v.assign(data_dict[v.name]))
-                count += 1
-        print("%d tensors loaded." %count)
+        ckpt = tf.train.latest_checkpoint(save_path)
+        saver.restore(sess, ckpt)
+            # info_path = os.path.join(config.save_dir, "config.pickle")
+            # info_path = os.path.join(config.save_dir, "config.pickle")
+            # info_file = open(info_path, "rb")
+            # config = pickle.load(info_file)
+            # global_step = config.global_step
+            # info_file.close()
+            # save_path = os.path.join(config.save_dir,
+            #                          str(global_step)+".npy")
+
+        print("The model from %s loaded" % save_path)
+        # data_dict = np.load(save_path).item()
+        # count = 0
+        # for v in tqdm(tf.global_variables()):
+        #     if v.name in data_dict.keys():
+        #         sess.run(v.assign(data_dict[v.name]))
+        #         count += 1
+        # print("%d tensors loaded." %count)
 
     def load_cnn(self, session, data_path, ignore_missing=True):
         """ Load a pretrained CNN model. """
